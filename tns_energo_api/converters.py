@@ -151,12 +151,6 @@ class DataMapping(Mapping, ABC):
     def __getitem__(self, item: str) -> Any:
         return getattr(self, self._meta_search[item])
 
-    def pretty(self):
-        from prettyprinter import pprint, install_extras
-
-        install_extras({"attrs"})
-        pprint(self)
-
 
 class RequestMapping(DataMapping):
     @classmethod
