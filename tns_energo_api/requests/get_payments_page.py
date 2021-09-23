@@ -11,8 +11,8 @@ from tns_energo_api.converters import (
     conv_bool,
     conv_date,
     conv_datetime,
-    conv_float,
     conv_str_stripped,
+    wrap_default_none,
     wrap_optional_eval,
     wrap_optional_none,
     wrap_str_stripped,
@@ -32,17 +32,20 @@ class PaymentData(DataMapping):
         converter=wrap_optional_none(wrap_str_stripped(wrap_optional_eval(conv_datetime))),
         metadata={META_SOURCE_DATA_KEY: "DATETIME"},
     )
-    source: str = attr.ib(
-        converter=conv_str_stripped,
+    source: Optional[str] = attr.ib(
+        converter=wrap_optional_none(conv_str_stripped),
         metadata={META_SOURCE_DATA_KEY: "ISTOCHNIK"},
+        default=None,
     )
     amount: float = attr.ib(
-        converter=conv_float,
+        converter=wrap_default_none(float, 0.0),
         metadata={META_SOURCE_DATA_KEY: "SUMMA"},
+        default=0.0,
     )
     transaction_id: Optional[str] = attr.ib(
         converter=wrap_optional_none(wrap_str_stripped(wrap_optional_eval(str))),
         metadata={META_SOURCE_DATA_KEY: "TRANSACTION"},
+        default=None,
     )
 
 

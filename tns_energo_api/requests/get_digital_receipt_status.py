@@ -8,6 +8,7 @@ from tns_energo_api.converters import (
     RequestMapping,
     conv_bool,
     conv_date,
+    conv_str_optional,
     wrap_optional_eval,
     wrap_str_stripped,
 )
@@ -31,24 +32,30 @@ class GetDigitalReceiptStatus(RequestMapping):
     send_invoices: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "sendKvt"},
+        default=False,
     )
     email_verification_required: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "EMAILVERIFY"},
+        default=False,
     )
-    profile_email: str = attr.ib(
-        converter=str,
+    profile_email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "registeredEmail"},
+        default=None,
     )
-    invoices_email: str = attr.ib(
-        converter=str,
+    invoices_email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "sendKvtEmail"},
+        default=None,
     )
     active_since: Optional[date] = attr.ib(
         converter=wrap_str_stripped(wrap_optional_eval(conv_date)),
         metadata={META_SOURCE_DATA_KEY: "sendKvtEmailFrom"},
+        default=None,
     )
     active_until: Optional[date] = attr.ib(
-        converter=wrap_str_stripped(wrap_optional_eval(conv_date)),
+        converter=wrap_optional_eval(wrap_str_stripped(wrap_optional_eval(conv_date))),
         metadata={META_SOURCE_DATA_KEY: "sendKvtEmailTo"},
+        default=None,
     )

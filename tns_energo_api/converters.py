@@ -133,9 +133,7 @@ class DataMapping(Mapping, ABC):
         # noinspection PyDataclass
         for field in attr.fields(cls):
             data_field = field.metadata.get(META_SOURCE_DATA_KEY, field.name)
-            if field.metadata.get(META_SOURCE_DATA_KEY) is None:
-                print(cls, field.name, "has not meta")
-            if data_field in data:
+            if data_field and data_field in data:
                 init_args[field.name.lstrip("_")] = data[data_field]
 
         init_args.update(kwargs)

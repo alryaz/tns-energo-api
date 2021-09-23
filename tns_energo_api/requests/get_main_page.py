@@ -12,6 +12,7 @@ from tns_energo_api.converters import (
     conv_float,
     conv_int,
     conv_str_optional,
+    wrap_default_none,
 )
 
 if TYPE_CHECKING:
@@ -24,21 +25,25 @@ class EmailInvoiceStatus(DataMapping):
         converter=str,
         metadata={META_SOURCE_DATA_KEY: "ls"},
     )
-    email: str = attr.ib(
-        converter=str,
+    email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "email"},
+        default=None,
     )
-    digital_invoices_email: str = attr.ib(
-        converter=str,
+    digital_invoices_email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "kvit_email"},
+        default=None,
     )
     digital_invoices_enabled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "kvit_enabled"},
+        default=False,
     )
     digital_invoices_ignored: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "ignore_ekvit"},
+        default=False,
     )
     digital_invoices_email_comment: Optional[str] = attr.ib(
         converter=conv_str_optional,
@@ -51,12 +56,13 @@ class EmailInvoiceStatus(DataMapping):
 @attr.s(kw_only=True, frozen=True, slots=True)
 class TicketsInfo(DataMapping):
     resolved: int = attr.ib(
-        converter=conv_int,
-        default={META_SOURCE_DATA_KEY: "resolved"},
+        converter=wrap_default_none(int, 0),
+        metadata={META_SOURCE_DATA_KEY: "resolved"},
+        default=0,
     )
     with_answer: int = attr.ib(
-        converter=conv_int,
-        default={META_SOURCE_DATA_KEY: "with_answer"},
+        converter=wrap_default_none(int, 0),
+        metadata={META_SOURCE_DATA_KEY: "with_answer"},
     )
 
 

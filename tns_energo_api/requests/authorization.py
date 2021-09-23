@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Sequence, TYPE_CHECKING, Union
+from typing import Any, Mapping, Optional, Sequence, TYPE_CHECKING, Union
 
 import attr
 
@@ -9,11 +9,12 @@ from tns_energo_api.converters import (
     conv_bool,
     conv_float,
     conv_str_optional,
+    wrap_default_none,
 )
 from tns_energo_api.requests.account import AccountInfo, converter__ls_list
 
 if TYPE_CHECKING:
-    from tns_energo_api import ResponseException, TNSEnergoAPI
+    from tns_energo_api import TNSEnergoAPI
 
 
 @attr.s(kw_only=True, frozen=True, slots=True)
@@ -22,23 +23,27 @@ class EmailAndKvitStatus(DataMapping):
         converter=str,
         metadata={META_SOURCE_DATA_KEY: "ls"},
     )
-    email: str = attr.ib(
-        converter=str,
+    email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "email"},
+        default=None,
     )
-    digital_invoices_email: str = attr.ib(
-        converter=str,
+    digital_invoices_email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "kvit_email"},
+        default=None,
     )
     digital_invoices_enabled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "kvit_enabled"},
+        default=False,
     )
     digital_invoices_ignored: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "ignore_ekvit"},
+        default=False,
     )
-    digital_invoices_email_comment: str = attr.ib(
+    digital_invoices_email_comment: Optional[str] = attr.ib(
         converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "kvit_email_string"},
         default=None,
@@ -94,34 +99,41 @@ class AuthorizationRequest(RequestMapping):
     is_controlled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "IS_SLAVE"},
+        default=False,
     )
-    controlled_by_code: str = attr.ib(
-        converter=str,
+    controlled_by_code: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "MASTER_LS"},
+        default=None,
     )
     is_controlling: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "IS_MASTER"},
+        default=False,
     )
-    email: str = attr.ib(
+    email: Optional[str] = attr.ib(
         converter=str,
         metadata={META_SOURCE_DATA_KEY: "EMAIL"},
+        default=None,
     )
     digital_invoices_ignored: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "ignore_ekvit"},
+        default=False,
     )
     _email_and_invoice_status: EmailAndKvitStatus = attr.ib(
         converter=_converter__email_and_kvit_status,
         metadata={META_SOURCE_DATA_KEY: "emailAndKvitStatus"},
     )
-    address: str = attr.ib(
-        converter=str,
+    address: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "ADDRESS"},
+        default=None,
     )
     debt: float = attr.ib(
-        converter=conv_float,
+        converter=wrap_default_none(float, 0.0),
         metadata={META_SOURCE_DATA_KEY: "BALANCE"},
+        default=0.0,
     )
 
     @property
@@ -144,6 +156,7 @@ class AuthorizationRequest(RequestMapping):
     dependent_accounts: Sequence[AccountInfo] = attr.ib(
         converter=converter__ls_list,
         metadata={META_SOURCE_DATA_KEY: "SLAVE_LS_LIST"},
+        default=(),
     )
     has_account_without_invoices: bool = attr.ib(
         converter=conv_bool,

@@ -1,6 +1,7 @@
-from typing import Any, Iterable, List, Mapping, Optional, Sequence, TYPE_CHECKING, Tuple, Union
+from typing import Any, Iterable, Mapping, Optional, Sequence, TYPE_CHECKING, Tuple, Union
 
 import attr
+from inter_rao_energosbyt.converters import conv_float_optional, conv_int_optional
 
 from tns_energo_api.converters import (
     DataMapping,
@@ -11,7 +12,6 @@ from tns_energo_api.converters import (
     conv_str_optional,
     wrap_default_none,
 )
-from tns_energo_api.exceptions import ResponseException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -24,14 +24,15 @@ if TYPE_CHECKING:
 
 @attr.s(kw_only=True, frozen=True, slots=True)
 class AccountInfo(DataMapping):
-    # Required attributes
     address: str = attr.ib(
-        converter=str,
+        converter=wrap_default_none(str, ""),
         metadata={META_SOURCE_DATA_KEY: "cache_address"},
+        default="",
     )
     debt: float = attr.ib(
         converter=wrap_default_none(float, 0.0),
         metadata={META_SOURCE_DATA_KEY: "cache_balance"},
+        default=None,
     )
     code: Optional[str] = attr.ib(
         converter=conv_str_optional,
@@ -41,18 +42,22 @@ class AccountInfo(DataMapping):
     email: Optional[str] = attr.ib(
         converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "email"},
+        default=None,
     )
     digital_invoices_ignored: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "ignore_ekvit"},
+        default=False,
     )
     digital_invoices_email: Optional[str] = attr.ib(
         converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "kvit_email"},
+        default=None,
     )
     digital_invoices_enabled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "kvit_enabled"},
+        default=False,
     )
     digital_invoices_email_comment: str = attr.ib(
         converter=conv_str_optional,
@@ -62,32 +67,37 @@ class AccountInfo(DataMapping):
     is_controlled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "is_slave_ls"},
+        default=False,
     )
     is_controlling: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "is_master_ls"},
+        default=False,
     )
-    controlled_by_code: str = attr.ib(
-        converter=str,
+    controlled_by_code: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "master_ls"},
+        default=None,
     )
-
-    # Optional attributes
-    alias: str = attr.ib(
-        converter=str,
+    alias: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "alias"},
+        default=None,
     )
-    controlling_code: str = attr.ib(
-        converter=str,
+    controlling_code: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "slave_ls"},
+        default=None,
     )
     is_locked: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "is_locked"},
+        default=False,
     )
     avatar_type: int = attr.ib(
         converter=conv_int,
         metadata={META_SOURCE_DATA_KEY: "avatar_type"},
+        default=0,
     )
 
     @property
@@ -96,8 +106,10 @@ class AccountInfo(DataMapping):
 
 
 def converter__ls_list(
-    value: Iterable[Union[Mapping[str, Any], AccountInfo]],
+    value: Optional[Iterable[Union[Mapping[str, Any], AccountInfo]]],
 ) -> Tuple[AccountInfo, ...]:
+    if value is None:
+        return ()
     return tuple(
         subvalue if isinstance(subvalue, AccountInfo) else AccountInfo.from_response(subvalue)
         for subvalue in value
@@ -121,8 +133,10 @@ class MeterDescription(DataMapping):
 
 
 def _converter__counters(
-    value: Iterable[Union[Mapping[str, Any], MeterDescription]]
+    value: Optional[Iterable[Union[Mapping[str, Any], MeterDescription]]]
 ) -> Tuple[MeterDescription, ...]:
+    if value is None:
+        return ()
     return tuple(
         subvalue
         if isinstance(subvalue, MeterDescription)
@@ -144,48 +158,59 @@ class GetInfo(RequestMapping):
         return cls.from_response(await cls.async_request_raw(on, code))
 
     address: str = attr.ib(
-        converter=str,
+        converter=wrap_default_none(str, ""),
         metadata={META_SOURCE_DATA_KEY: "ADDRESS"},
+        default="",
     )
-    contact: str = attr.ib(
-        converter=str,
+    contact: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "TELNANIMATEL"},
+        default=None,
     )
-    people_registered: int = attr.ib(
-        converter=int,
+    people_registered: Optional[int] = attr.ib(
+        converter=conv_int_optional,
         metadata={META_SOURCE_DATA_KEY: "CHISLOPROPISAN"},
+        default=None,
     )
-    total_area: float = attr.ib(
-        converter=float,
+    total_area: Optional[float] = attr.ib(
+        converter=conv_float_optional,
         metadata={META_SOURCE_DATA_KEY: "OBSCHPLOSCHAD"},
+        default=None,
     )
-    living_area: int = attr.ib(
-        converter=int,
+    living_area: Optional[int] = attr.ib(
+        converter=conv_int_optional,
         metadata={META_SOURCE_DATA_KEY: "JILPLOSCHAD"},
+        default=None,
     )
-    ownership_document: str = attr.ib(
-        converter=str,
+    ownership_document: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "DOCSOBSTV"},
+        default=None,
     )
     living_category: str = attr.ib(
-        converter=str,
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "KATEGJIL"},
+        default=None,
     )
-    sn_koefsezon: int = attr.ib(
-        converter=int,
+    seasonal_coefficient: Optional[int] = attr.ib(
+        converter=conv_int_optional,
         metadata={META_SOURCE_DATA_KEY: "SN_KOEFSEZON"},
+        default=None,
     )
-    sn_objem: int = attr.ib(
-        converter=int,
+    volume: Optional[int] = attr.ib(
+        converter=conv_int_optional,
         metadata={META_SOURCE_DATA_KEY: "SN_OBJEM"},
+        default=None,
     )
     invoice_is_digital: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "DIGITAL_RECEIPT"},
+        default=False,
     )
-    meters: List["MeterDescription"] = attr.ib(
+    meters: Tuple["MeterDescription", ...] = attr.ib(
         converter=_converter__counters,
         metadata={META_SOURCE_DATA_KEY: "counters"},
+        default=(),
     )
 
 
@@ -210,24 +235,30 @@ class GetLSListByLS(RequestMapping):
     data: Sequence[AccountInfo] = attr.ib(
         converter=converter__ls_list,
         metadata={META_SOURCE_DATA_KEY: "data"},
+        default=(),
     )
-    email: str = attr.ib(
-        converter=str,
+    email: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "email"},
+        default=None,
     )
     is_controlled: bool = attr.ib(
-        converter=conv_bool,
+        converter=wrap_default_none(conv_bool, False),
         metadata={META_SOURCE_DATA_KEY: "is_slave"},
+        default=False,
     )
     is_controlling: bool = attr.ib(
-        converter=bool,
+        converter=wrap_default_none(conv_bool, False),
         metadata={META_SOURCE_DATA_KEY: "is_master"},
+        default=False,
     )
     digital_invoices_enabled: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "kvit_enabled"},
+        default=False,
     )
     has_account_without_invoices: bool = attr.ib(
         converter=conv_bool,
         metadata={META_SOURCE_DATA_KEY: "has_ls_without_kvit"},
+        default=False,
     )
