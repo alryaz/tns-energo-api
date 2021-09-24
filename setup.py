@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 project_id = "tns-energo-api"
 setuptools.setup(
     name=project_id,
-    version="0.0.2",
+    version="0.0.3",
     author="Alexander Ryazanov",
     author_email="alryaz@xavux.com",
     description="TNS Energo API bindings for python",
