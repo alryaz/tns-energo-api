@@ -9,14 +9,12 @@ from tns_energo_api.converters import (
     META_SOURCE_DATA_KEY,
     RequestMapping,
     conv_bool,
-    conv_date,
-    conv_datetime,
-    conv_str_stripped,
+    conv_date_optional,
+    conv_datetime_optional,
+    conv_str_optional,
     wrap_default_none,
-    wrap_optional_eval,
-    wrap_optional_none,
-    wrap_str_stripped,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -24,16 +22,18 @@ if TYPE_CHECKING:
 
 @attr.s(kw_only=True, frozen=True, slots=True)
 class PaymentData(DataMapping):
-    date: date_sys = attr.ib(
-        converter=conv_date,
+    date: Optional[date_sys] = attr.ib(
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "DATE"},
+        default=None,
     )
     datetime: Optional[datetime_sys] = attr.ib(
-        converter=wrap_optional_none(wrap_str_stripped(wrap_optional_eval(conv_datetime))),
+        converter=conv_datetime_optional,
         metadata={META_SOURCE_DATA_KEY: "DATETIME"},
+        default=None,
     )
     source: Optional[str] = attr.ib(
-        converter=wrap_optional_none(conv_str_stripped),
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "ISTOCHNIK"},
         default=None,
     )
@@ -43,7 +43,7 @@ class PaymentData(DataMapping):
         default=0.0,
     )
     transaction_id: Optional[str] = attr.ib(
-        converter=wrap_optional_none(wrap_str_stripped(wrap_optional_eval(str))),
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "TRANSACTION"},
         default=None,
     )
@@ -89,7 +89,10 @@ class GetPaymentsPage(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     result: bool = attr.ib(
         converter=conv_bool,

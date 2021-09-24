@@ -16,3 +16,7 @@ class RequestException(TNSEnergoException):
 
 class RequestTimeoutException(RequestException):
     """Request timed out"""
+
+
+class EmptyResultException(ResponseResultException):
+    """Response contains empty result"""

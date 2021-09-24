@@ -7,11 +7,10 @@ from tns_energo_api.converters import (
     META_SOURCE_DATA_KEY,
     RequestMapping,
     conv_bool,
-    conv_date,
+    conv_date_optional,
     conv_str_optional,
-    wrap_optional_eval,
-    wrap_str_stripped,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -27,7 +26,10 @@ class GetDigitalReceiptStatus(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     send_invoices: bool = attr.ib(
         converter=conv_bool,
@@ -50,12 +52,12 @@ class GetDigitalReceiptStatus(RequestMapping):
         default=None,
     )
     active_since: Optional[date] = attr.ib(
-        converter=wrap_str_stripped(wrap_optional_eval(conv_date)),
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "sendKvtEmailFrom"},
         default=None,
     )
     active_until: Optional[date] = attr.ib(
-        converter=wrap_optional_eval(wrap_str_stripped(wrap_optional_eval(conv_date))),
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "sendKvtEmailTo"},
         default=None,
     )

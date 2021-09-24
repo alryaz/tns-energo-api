@@ -29,21 +29,39 @@ def conv_int(value: Union[int, str]) -> int:
     return int(str(value).strip())
 
 
-def conv_date(value: Union[date, str]) -> date:
+def conv_date_optional(value: Optional[Union[date, str]]) -> Optional[date]:
+    if value is None:
+        return None
+
     if isinstance(value, date):
         return value
+
+    value = str(value).strip()
+    if not value:
+        return None
+
     try:
-        return datetime.strptime(value, "%d.%m.%y").date()
+        dt = datetime.strptime(value, "%d.%m.%y")
     except ValueError:
-        return datetime.strptime(value, "%d.%m.%Y").date()
+        dt = datetime.strptime(value, "%d.%m.%Y")
+
+    return dt.date()
 
 
-def conv_datetime(value: Union[datetime, str]) -> datetime:
+def conv_datetime_optional(value: Optional[Union[datetime, str]]) -> Optional[datetime]:
+    if value is None:
+        return None
+
     if isinstance(value, datetime):
         return value
-    value = str(value)
+
+    value = str(value).strip()
+    if not value:
+        return None
+
     if len(value) != 14:
         raise ValueError("datetime can only be converted from long string (14len)")
+
     return datetime.strptime(value, "%Y%m%d%H%M%S")
 
 
@@ -81,7 +99,7 @@ def conv_str_stripped(value: Any) -> str:
 
 
 def conv_str_optional(value: Optional[Any]) -> Optional[str]:
-    return None if value is None else str(value)
+    return conv_str_stripped(value) if value else None
 
 
 def wrap_str_stripped(conv: Callable[[str], _RT]) -> Callable[[Any], _RT]:

@@ -8,9 +8,10 @@ from tns_energo_api.converters import (
     META_SOURCE_DATA_KEY,
     RequestMapping,
     conv_bool,
-    conv_date,
+    conv_date_optional,
     conv_float,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -39,7 +40,7 @@ class ResultData(DataMapping):
         metadata={META_SOURCE_DATA_KEY: "ЗАДОЛЖЕННОСТЬПОДКЛ"},
     )
     period: date = attr.ib(
-        converter=conv_date,
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "ЗАКРЫТЫЙМЕСЯЦ"},
     )
     charged_meter: float = attr.ib(
@@ -124,7 +125,10 @@ class SendIndications(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str, data: Iterable[NewIndication]):
-        return cls.from_response(await cls.async_request_raw(on, code, data))
+        result = await cls.async_request_raw(on, code, data)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     result: bool = attr.ib(
         converter=conv_bool,

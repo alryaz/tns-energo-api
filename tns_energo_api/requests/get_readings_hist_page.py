@@ -9,12 +9,12 @@ from tns_energo_api.converters import (
     DataMapping,
     META_SOURCE_DATA_KEY,
     RequestMapping,
-    conv_date,
+    conv_date_optional,
     conv_int,
-    conv_optional_eval,
-    wrap_default_none,
+    conv_str_stripped,
     wrap_optional_eval,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 @attr.s(kw_only=True, frozen=True, slots=True)
 class ReadingData(DataMapping):
-    label: str = attr.ib(converter=str, metadata={META_SOURCE_DATA_KEY: "label"})
+    label: str = attr.ib(converter=conv_str_stripped, metadata={META_SOURCE_DATA_KEY: "label"})
     value: int = attr.ib(converter=conv_int, metadata={META_SOURCE_DATA_KEY: "value"})
 
 
@@ -50,7 +50,7 @@ def converter__readings(value: Mapping[str, Union[ReadingData, Mapping[str, Any]
 @attr.s(kw_only=True, frozen=True, slots=True)
 class GetReadingsHistPageData(DataMapping):
     meter_code: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "number"},
     )
     status: Optional[int] = attr.ib(
@@ -88,10 +88,14 @@ def converter__history(
         for date_, meter_data_map in date_meter_map.items():
             if not meter_data_map:
                 continue
-            elif not isinstance(meter_data_map, Mapping):
+
+            if not isinstance(meter_data_map, Mapping):
                 raise TypeError(type(meter_data_map))
 
-            date_ = conv_date(date_)
+            date_ = conv_date_optional(date_)
+
+            if date_ is None:
+                continue
 
             for meter, data in meter_data_map.items():
                 if not data:
@@ -116,7 +120,10 @@ class GetReadingsHistPage(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     history: Mapping[int, Mapping[date, Mapping[str, GetReadingsHistPageData]]] = attr.ib(
         converter=converter__history,

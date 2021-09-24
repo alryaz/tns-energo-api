@@ -1,4 +1,3 @@
-import json
 from types import MappingProxyType
 from typing import Any, Iterable, List, Mapping, Optional, TYPE_CHECKING, Tuple, Union
 
@@ -10,10 +9,11 @@ from tns_energo_api.converters import (
     RequestMapping,
     conv_bool,
     conv_float,
-    conv_int,
     conv_str_optional,
+    conv_str_stripped,
     wrap_default_none,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 @attr.s(kw_only=True, frozen=True, slots=True)
 class EmailInvoiceStatus(DataMapping):
     code: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "ls"},
     )
     email: Optional[str] = attr.ib(
@@ -92,7 +92,10 @@ class GetMainPage(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     cost_of_restriction: float = attr.ib(
         converter=conv_float,

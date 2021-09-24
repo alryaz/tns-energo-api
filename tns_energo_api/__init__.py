@@ -16,7 +16,9 @@ __all__ = (
 import asyncio
 import json
 import logging
+import uuid
 from datetime import date, datetime
+from io import StringIO
 from types import MappingProxyType
 from typing import (
     Any,
@@ -56,6 +58,19 @@ AccountCode = str
 _LOGGER = logging.getLogger(__name__)
 
 
+class TESTWRITER:
+    def __init__(self) -> None:
+        self._contents = StringIO()
+
+    def __str__(self) -> str:
+        return self._contents.getvalue()
+
+    async def write(self, data):
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+        self._contents.write(data)
+
+
 def process_start_end_arguments(start: Optional[datetime], end: Optional[datetime]):
     if start is None:
         start = datetime.min
@@ -78,7 +93,7 @@ DEFAULT_TIMEOUT: Final = aiohttp.ClientTimeout(total=30)
 
 
 class TNSEnergoAPI:
-    GLOBAL_APP_VERSION: ClassVar[str] = "1.56"
+    GLOBAL_APP_VERSION: ClassVar[str] = "1.60"
     GLOBAL_HASH: ClassVar[str] = "958fdc9525875bb8ef89e5c0bda3ebc60b95040e"
 
     REGIONS_MAP: ClassVar[Mapping[str, str]] = {
@@ -127,6 +142,7 @@ class TNSEnergoAPI:
         self._session = aiohttp.ClientSession(
             timeout=timeout,
             cookie_jar=aiohttp.CookieJar(),
+            headers={aiohttp.hdrs.USER_AGENT: "okhttp/3.7.0"},
         )
 
         self._main_account: Optional[Account] = None
@@ -148,6 +164,10 @@ class TNSEnergoAPI:
         return self._region
 
     @property
+    def username(self) -> str:
+        return self._username
+
+    @property
     def local_hash(self) -> str:
         return self._local_hash or self.GLOBAL_HASH
 
@@ -165,7 +185,7 @@ class TNSEnergoAPI:
 
     @property
     def requests_url_base(self) -> str:
-        return f"https://rest.tns-e.ru/version/{self.local_app_version}" f"/Android/mobile"
+        return f"https://rest.tns-e.ru/version/{self.local_app_version}/Android/mobile"
 
     async def async_req_get(self, path: Union[str, Iterable[str]]):
         if isinstance(path, str):
@@ -201,9 +221,11 @@ class TNSEnergoAPI:
             raise TNSEnergoException("During request handling a timeout occurred")
 
     async def async_req_post(self, path: Union[str, Iterable[str]], data: Any, name: str = "data"):
-        with aiohttp.MultipartWriter("multipart/form-data") as mpdwriter:
+        with aiohttp.MultipartWriter(
+            "multipart/form-data", boundary=str(uuid.uuid1())
+        ) as mpdwriter:
             mpdwriter.append(
-                json.dumps(data),
+                json.dumps(data).replace(" ", ""),
                 MultiDict(
                     {
                         aiohttp.hdrs.CONTENT_DISPOSITION: f'form-data; name="{name}"',
@@ -224,7 +246,10 @@ class TNSEnergoAPI:
                     data=mpdwriter,
                     params={"hash": self.local_hash},
                     headers={
-                        aiohttp.hdrs.CONTENT_TYPE: f"multipart/form-data; boundary={mpdwriter.boundary}"
+                        aiohttp.hdrs.CONTENT_TYPE: (
+                            f"multipart/form-data; boundary={mpdwriter.boundary}"
+                        ),
+                        aiohttp.hdrs.CONNECTION: aiohttp.hdrs.KEEP_ALIVE,
                     },
                     raise_for_status=True,
                 ) as response:

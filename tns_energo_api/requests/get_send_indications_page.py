@@ -9,14 +9,16 @@ from tns_energo_api.converters import (
     META_SOURCE_DATA_KEY,
     RequestMapping,
     conv_bool,
-    conv_date,
+    conv_date_optional,
     conv_float,
     conv_int,
+    conv_str_optional,
     conv_str_stripped,
     wrap_optional_eval,
     wrap_optional_none,
     wrap_str_stripped,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -72,13 +74,15 @@ class ZoneData(DataMapping):
         converter=conv_int,
         metadata={META_SOURCE_DATA_KEY: "DatePoverStatus"},
     )
-    checkup_url: str = attr.ib(
-        converter=conv_str_stripped,
+    checkup_url: Optional[str] = attr.ib(
+        converter=conv_str_optional,
         metadata={META_SOURCE_DATA_KEY: "DatePoverURL"},
+        default=None,
     )
-    checkup_date: date = attr.ib(
-        converter=conv_date,
+    checkup_date: Optional[date] = attr.ib(
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "DatePover"},
+        default=None,
     )
     status: str = attr.ib(
         converter=conv_str_stripped,
@@ -88,13 +92,15 @@ class ZoneData(DataMapping):
         converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "MestoUst"},
     )
-    manufactured_date: date = attr.ib(
-        converter=conv_date,
+    manufactured_date: Optional[date] = attr.ib(
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "GodVipuska"},
+        default=None,
     )
-    last_checkup_date: date = attr.ib(
-        converter=conv_date,
+    last_checkup_date: Optional[date] = attr.ib(
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "DatePosledPover"},
+        default=None,
     )
     model: str = attr.ib(
         converter=conv_str_stripped,
@@ -105,8 +111,9 @@ class ZoneData(DataMapping):
         metadata={META_SOURCE_DATA_KEY: "Tarifnost"},
     )
     last_indications_date: Optional[date] = attr.ib(
-        converter=wrap_optional_none(wrap_str_stripped(wrap_optional_eval(conv_date))),
+        converter=conv_date_optional,
         metadata={META_SOURCE_DATA_KEY: "DatePok"},
+        default=None,
     )
     service_number: str = attr.ib(
         converter=conv_str_stripped,
@@ -175,10 +182,13 @@ class SendIndicationsPage(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     status: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "STATUS"},
     )
     counters: Mapping[str, Sequence[ZoneData]] = attr.ib(

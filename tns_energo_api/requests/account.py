@@ -9,9 +9,11 @@ from tns_energo_api.converters import (
     conv_bool,
     conv_int,
     conv_str_optional,
+    conv_str_stripped,
     wrap_default_none,
     wrap_optional_none,
 )
+from tns_energo_api.exceptions import EmptyResultException
 
 if TYPE_CHECKING:
     from tns_energo_api import TNSEnergoAPI
@@ -119,15 +121,15 @@ def converter__ls_list(
 @attr.s(kw_only=True, frozen=True, slots=True)
 class MeterDescription(DataMapping):
     install_location: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "MestoUst"},
     )
     status: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "RaschSch"},
     )
     code: str = attr.ib(
-        converter=str,
+        converter=conv_str_stripped,
         metadata={META_SOURCE_DATA_KEY: "ZavodNomer"},
     )
 
@@ -155,7 +157,10 @@ class GetInfo(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str):
-        return cls.from_response(await cls.async_request_raw(on, code))
+        result = await cls.async_request_raw(on, code)
+        if result is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(result)
 
     address: str = attr.ib(
         converter=wrap_default_none(str, ""),
@@ -230,7 +235,10 @@ class GetLSListByLS(RequestMapping):
 
     @classmethod
     async def async_request(cls, on: "TNSEnergoAPI", code: str, dlogin: int = 0):
-        return cls.from_response(await cls.async_request_raw(on, code, dlogin))
+        response = await cls.async_request_raw(on, code, dlogin)
+        if response is None:
+            raise EmptyResultException("Response result is empty")
+        return cls.from_response(response)
 
     data: Sequence[AccountInfo] = attr.ib(
         converter=converter__ls_list,
