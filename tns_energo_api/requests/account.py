@@ -1,7 +1,6 @@
 from typing import Any, Iterable, Mapping, Optional, Sequence, TYPE_CHECKING, Tuple, Union
 
 import attr
-from inter_rao_energosbyt.converters import conv_float_optional, conv_int_optional
 
 from tns_energo_api.converters import (
     DataMapping,
@@ -11,6 +10,7 @@ from tns_energo_api.converters import (
     conv_int,
     conv_str_optional,
     wrap_default_none,
+    wrap_optional_none,
 )
 
 if TYPE_CHECKING:
@@ -168,17 +168,17 @@ class GetInfo(RequestMapping):
         default=None,
     )
     people_registered: Optional[int] = attr.ib(
-        converter=conv_int_optional,
+        converter=wrap_optional_none(int),
         metadata={META_SOURCE_DATA_KEY: "CHISLOPROPISAN"},
         default=None,
     )
     total_area: Optional[float] = attr.ib(
-        converter=conv_float_optional,
+        converter=wrap_default_none(float, None),
         metadata={META_SOURCE_DATA_KEY: "OBSCHPLOSCHAD"},
         default=None,
     )
     living_area: Optional[int] = attr.ib(
-        converter=conv_int_optional,
+        converter=wrap_optional_none(int),
         metadata={META_SOURCE_DATA_KEY: "JILPLOSCHAD"},
         default=None,
     )
@@ -193,12 +193,12 @@ class GetInfo(RequestMapping):
         default=None,
     )
     seasonal_coefficient: Optional[int] = attr.ib(
-        converter=conv_int_optional,
+        converter=wrap_optional_none(int),
         metadata={META_SOURCE_DATA_KEY: "SN_KOEFSEZON"},
         default=None,
     )
     volume: Optional[int] = attr.ib(
-        converter=conv_int_optional,
+        converter=wrap_optional_none(int),
         metadata={META_SOURCE_DATA_KEY: "SN_OBJEM"},
         default=None,
     )
