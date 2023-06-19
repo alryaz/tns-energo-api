@@ -60,7 +60,7 @@ def conv_datetime_optional(value: Optional[Union[datetime, str]]) -> Optional[da
         return None
 
     if len(value) != 14:
-        raise ValueError("datetime can only be converted from long string (14len)")
+        raise ValueError(f"datetime can only be converted from long string (14len). Actual: {value}")
 
     return datetime.strptime(value, "%Y%m%d%H%M%S")
 
