@@ -49,6 +49,19 @@ class PaymentData(DataMapping):
     )
 
 
+def _create_payment_data(payment_data) -> PaymentData:
+    if isinstance(payment_data, PaymentData):
+        return payment_data
+
+    payment_data['DATETIME'] = payment_data['DATETIME'] \
+        .replace(" ", "") \
+        .replace("_", "") \
+        .replace("-", "") \
+        .replace(":", "")
+
+    return PaymentData.from_response(payment_data)
+
+
 def converter__history(
     value: Union[
         Mapping[Union[str, int], Iterable[Union[Mapping[str, Any], PaymentData]]], Iterable
@@ -64,11 +77,7 @@ def converter__history(
             year: tuple(
                 sorted(
                     (
-                        (
-                            payment_data
-                            if isinstance(payment_data, PaymentData)
-                            else PaymentData.from_response(payment_data)
-                        )
+                        _create_payment_data(payment_data)
                         for payment_data in payment_data_list
                     ),
                     key=lambda x: (x.date, x.datetime or 0),
